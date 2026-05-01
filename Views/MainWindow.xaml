@@ -7,7 +7,8 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="None" 
         AllowsTransparency="True" 
-        Background="Transparent">
+        Background="Transparent"
+        Icon="pack://application:,,,/Assets/icon.ico">
 
     <Window.Resources>
         <!-- =============== Button Style =============== -->
@@ -178,7 +179,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <!-- Global Volume -->
-                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="15"/>
                     <!-- Spacing -->
                     <RowDefinition Height="*"/>
                     <!-- Scrollable App List -->
@@ -192,10 +193,17 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <!-- The Slider -->
-                        <Slider Grid.Column="0" Maximum="100" Value="50" VerticalAlignment="Center"/>
-                        <!-- The Percentage -->
-                        <TextBlock Grid.Column="1" Text="50%" Foreground="#888888" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                        <Slider Grid.Column="0" 
+                        Maximum="100" 
+                        Value="{Binding GlobalVolume, Mode=TwoWay}" 
+                        VerticalAlignment="Center"/>
+
+                        <TextBlock Grid.Column="1" 
+                           Text="{Binding GlobalVolumeText}" 
+                           Foreground="#888888" 
+                           HorizontalAlignment="Right" 
+                           VerticalAlignment="Center"/>
                     </Grid>
                 </StackPanel>
 
@@ -205,8 +213,25 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Margin="0,0,0,15">
-                                    <TextBlock Text="{Binding AppName}" Foreground="#CCCCCC" Margin="0,0,0,5"/>
-                                    <Slider Maximum="100" Value="{Binding Volume}"/>
+                                    <TextBlock Text="{Binding AppName}" Foreground="#CCCCCC" Margin="7,0,0,5"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="40"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Slider Grid.Column="0" 
+                                                Maximum="100" 
+                                                Value="{Binding Volume, Mode=TwoWay}" 
+                                                VerticalAlignment="Center"/>
+
+                                        <TextBlock Grid.Column="1" 
+                                                   Text="{Binding VolumeText}" 
+                                                   Foreground="#888888" 
+                                                   HorizontalAlignment="Right" 
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
                                 </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
