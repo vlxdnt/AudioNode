@@ -167,10 +167,10 @@
 
                     <!-- Centered App Title -->
                     <TextBlock Text="AudioNode" 
-                           Foreground="#888888" 
+                           Foreground="#AAAAAA" 
                            HorizontalAlignment="Center" 
                            VerticalAlignment="Center" 
-                           FontWeight="SemiBold"/>
+                           FontWeight="Bold"/>
 
                 </Grid>
             </Border>

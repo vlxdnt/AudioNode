@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
+using Windows.Media.Control;
 
 namespace AudioNode.Views
 {
@@ -15,25 +16,21 @@ namespace AudioNode.Views
         public ObservableCollection<AudioApp> ActiveApps { get; set; } = new ObservableCollection<AudioApp>();
 
         // Store the master device so it doesn't get garbage collected
-        private MMDevice _defaultDevice;
+        private MMDevice? _defaultDevice;
+        private readonly MediaKeyHook _mediaKeyHook = new();
 
         // --- GLOBAL VOLUME PROPERTIES ---
         public double GlobalVolume
         {
-            get
-            {
-                if (_defaultDevice == null) return 0;
-                return _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100;
-            }
+            get => _defaultDevice == null ? 0
+                 : _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100;
             set
             {
-                if (_defaultDevice != null)
-                {
-                    // Update Windows Master Volume
-                    _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(value / 100);
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(GlobalVolumeText));
-                }
+                if (_defaultDevice == null) return;
+
+                _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(value / 100);
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(GlobalVolumeText));
             }
         }
 
@@ -46,7 +43,88 @@ namespace AudioNode.Views
 
             LoadAudioSessions();
             AppListControl.ItemsSource = ActiveApps;
+
+            // Install the global media key hook.
+            // TakePriority = true  : our app handles the key; Windows never see it.
+            // TakePriority = false : we react to the key but still pass it through.
+            _mediaKeyHook.TakePriority = true;
+            _mediaKeyHook.Install();
+
+            // Wire up media key events
+            _mediaKeyHook.PlayPausePressed += OnPlayPause;
+            _mediaKeyHook.StopPressed += OnStop;
+            _mediaKeyHook.NextTrackPressed += OnNextTrack;
+            _mediaKeyHook.PreviousTrackPressed += OnPreviousTrack;
+            _mediaKeyHook.MutePressed += OnMute;
+            _mediaKeyHook.VolumeUpPressed += OnVolumeUp;
+            _mediaKeyHook.VolumeDownPressed += OnVolumeDown;
         }
+
+        // ---------------------------------------------------------------
+        // Media key handlers
+        // ---------------------------------------------------------------
+
+        private async void OnPlayPause(object? sender, EventArgs e)
+        {
+            var sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            var currentSession = sessionManager.GetCurrentSession();
+
+            if (currentSession != null)
+            {
+                await currentSession.TryTogglePlayPauseAsync();
+            }
+        }
+
+        private async void OnStop(object? sender, EventArgs e)
+        {
+            var sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            var currentSession = sessionManager.GetCurrentSession();
+
+            if (currentSession != null)
+            {
+                await currentSession.TryStopAsync();
+            }
+        }
+
+        private async void OnNextTrack(object? sender, EventArgs e)
+        {
+            var sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            var currentSession = sessionManager.GetCurrentSession();
+
+            if (currentSession != null)
+            {
+                await currentSession.TrySkipNextAsync();
+            }
+        }
+
+        private async void OnPreviousTrack(object? sender, EventArgs e)
+        {
+            var sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            var currentSession = sessionManager.GetCurrentSession();
+
+            if (currentSession != null)
+            {
+                await currentSession.TrySkipPreviousAsync();
+            }
+        }
+
+        private void OnMute(object? sender, EventArgs e)
+        {
+            if (_defaultDevice == null) return;
+            bool current = _defaultDevice.AudioEndpointVolume.Mute;
+            _defaultDevice.AudioEndpointVolume.Mute = !current;
+        }
+
+        private void OnVolumeUp(object? sender, EventArgs e)
+        {
+            GlobalVolume = Math.Min(100, GlobalVolume + 5);
+        }
+
+        private void OnVolumeDown(object? sender, EventArgs e)
+        {
+            GlobalVolume = Math.Max(0, GlobalVolume - 5);
+        }
+
 
         private void LoadAudioSessions()
         {
